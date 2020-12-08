@@ -2,7 +2,6 @@ import importlib
 import sys
 import os
 import self_modify
-import globals
 
 # Usage: python run.py example.py example_fun
 if __name__ == '__main__':
@@ -17,7 +16,7 @@ if __name__ == '__main__':
         input_func = sys.argv[2]
 
         # import the input file ourselves and call the function
-        globals.init_globals()
-        globals.user_module = importlib.import_module(module_name)
-        function_to_call = getattr(globals.user_module, input_func)
+        self_modify.init_globals()
+        self_modify.user_module = importlib.import_module(module_name)
+        function_to_call = getattr(self_modify.user_module, input_func)
         function_to_call()
