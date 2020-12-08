@@ -2,10 +2,18 @@ import importlib
 import os
 import sys
 
-
 def init_globals():
     global user_module
     user_module = []
+
+    global user_variables
+    user_variables = {}
+
+    global line_called
+    line_called = 0
+
+    global need_to_jump
+    need_to_jump = False
 
 # Replace a line in the calling file
 def replace_line(file, line, string, indent):
@@ -23,8 +31,11 @@ def replace_line(file, line, string, indent):
     global user_module
     importlib.reload(user_module)
 
-# Jump to a spot in the function calling *replace_line*
-# Required going back multiple frames
+    #TODO: Make the *calling function* return False after this
+    #TODO: Note the line that this was called from and save it as line_called
+
+# Jump to a spot in the function calling function_start
+# Requires going back multiple frames
 def jump(lineno):
     frame = sys._getframe().f_back.f_back
     called_from = frame
@@ -47,15 +58,18 @@ def jump(lineno):
         frame = frame.f_back
     sys.settrace(hook)
 
-def foo():
-    # a = 1
-    # j(51)
-    # a = 2 #jump 2
-    # print(1)
-    # print(2) #jump 1
-    # if a == 1:
-    #     j(49)
-    # print(4)
-    jump(61)
+# Functions using replacement need to call this function at the start
+# This jumps to the line where replace_line was called
+def function_start():
+    global need_to_jump
+    global line_called
+    if(need_to_jump):
+        jump(line_called)
 
-foo()
+# Testing fucntion
+def jump_encapulate(line):
+    jump(line)
+
+jump_encapulate(75)
+print(1)
+print(2)

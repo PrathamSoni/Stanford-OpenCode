@@ -19,4 +19,8 @@ if __name__ == '__main__':
         self_modify.init_globals()
         self_modify.user_module = importlib.import_module(module_name)
         function_to_call = getattr(self_modify.user_module, input_func)
-        function_to_call()
+
+        # call the function until it is done
+        return_value = function_to_call()
+        while return_value is not True:
+            return_value = function_to_call()
