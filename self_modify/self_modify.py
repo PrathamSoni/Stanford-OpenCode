@@ -1,6 +1,7 @@
 import importlib
 import os
 import sys
+import inspect
 
 def init_globals():
     global user_module
@@ -31,8 +32,11 @@ def replace_line(file, line, string, indent):
     global user_module
     importlib.reload(user_module)
 
+    caller = inspect.getframeinfo(inspect.stack()[1][0])
+    global line_called
+    line_called = caller.lineno
+
     #TODO: Make the *calling function* return False after this
-    #TODO: Note the line that this was called from and save it as line_called
 
 # Jump to a spot in the function calling function_start
 # Requires going back multiple frames
