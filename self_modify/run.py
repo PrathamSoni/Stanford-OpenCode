@@ -23,4 +23,6 @@ if __name__ == '__main__':
         # call the function until it is done
         return_value = function_to_call()
         while return_value is not True:
+            self_modify.user_module = importlib.import_module(module_name)
+            function_to_call = getattr(self_modify.user_module, input_func)
             return_value = function_to_call()

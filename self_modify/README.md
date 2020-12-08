@@ -3,6 +3,8 @@
 
 **Usage:**
 
+Code:
+
 ```
 import self_modify
 
@@ -29,6 +31,8 @@ def example_fun():
     # Need to return True
     return True
 ```
+
+Running: `python run.py example.py example_fun`
 
 **Design:**
 

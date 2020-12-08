@@ -15,7 +15,7 @@ def example_fun():
         # Need to return False on the line after replace_line
         self_modify.user_variables['a'] = a
         self_modify.replace_line(__file__, 9, new_line, 2)
-        return False
+        if(self_modify.need_to_jump): return False
         a = self_modify.user_variables['a']
 
     new_line = 'a = {}'.format(0)
@@ -26,30 +26,29 @@ def example_fun():
 
 # Currently does work
 # This function demonstrates that code edited *behind* the current line doesn't
-# get re-executed, but code edited *after* the current line does get executed
+# get re-executed, but code edited *in front of* the current line does get executed
 # at the correct time.
 def example_fun_noblocks():
     # Need to call function_start() at the beginning of each function.
     self_modify.function_start()
 
-    a = 1
+    a = 0
     print("Assigned first a")
-
-    new_line = 'a = {}'.format(1)
 
     # Need to store and reload global variables before and after replace_line
     # Need to return False on the line after replace_line
+    new_line = 'a = {}'.format(1)
     self_modify.user_variables['a'] = a
     self_modify.replace_line(__file__, 35, new_line, 1)
-    return False
+    if(self_modify.need_to_jump): return False
     a = self_modify.user_variables['a']
 
     print("Modified first line")
 
     new_line = 'a = {}'.format(2)
     self_modify.user_variables['a'] = a
-    self_modify.replace_line(__file__, 59, new_line, 1)
-    return False
+    self_modify.replace_line(__file__, 58, new_line, 1)
+    if(self_modify.need_to_jump): return False
     a = self_modify.user_variables['a']
 
     print("Modified second line")
@@ -62,16 +61,17 @@ def example_fun_noblocks():
     print("Assigned second a")
 
     # Reset the lines
-    new_line = 'a = {}'.format(0)
 
+    new_line = 'a = {}'.format(0)
     self_modify.user_variables['a'] = a
     self_modify.replace_line(__file__, 35, new_line, 1)
-    return False
+    if(self_modify.need_to_jump): return False
     a = self_modify.user_variables['a']
 
+    new_line = 'a = {}'.format(0)
     self_modify.user_variables['a'] = a
-    self_modify.replace_line(__file__, 59, new_line, 1)
-    return False
+    self_modify.replace_line(__file__, 58, new_line, 1)
+    if(self_modify.need_to_jump): return False
     a = self_modify.user_variables['a']
 
     return True
