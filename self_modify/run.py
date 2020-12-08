@@ -2,7 +2,7 @@ import importlib
 import sys
 import os
 import self_modify
-import shelve
+import globals
 
 # Usage: python run.py example.py example_fun
 if __name__ == '__main__':
@@ -16,12 +16,8 @@ if __name__ == '__main__':
         module_name = os.path.splitext(input_file)[0]
         input_func = sys.argv[2]
 
-        # Make self_modify.py import the input file
-        import_string = "import " + module_name
-        self_modify.replace_line("self_modify.py", 5, import_string, 0, is_self = True)
-        importlib.reload(self_modify)
-
         # import the input file ourselves and call the function
-        user_module = importlib.import_module(module_name)
-        function_to_call = getattr(user_module, input_func)
+        globals.init_globals()
+        globals.user_module = importlib.import_module(module_name)
+        function_to_call = getattr(globals.user_module, input_func)
         function_to_call()

@@ -1,10 +1,8 @@
 import importlib
 import os
+import globals
 
-# Below import is sacrificial for run.py
-import example
-
-def replace_line(file, line, string, indent, is_self = False):
+def replace_line(file, line, string, indent):
 
     module_name = os.path.splitext(os.path.basename(file))[0]
 
@@ -16,6 +14,4 @@ def replace_line(file, line, string, indent, is_self = False):
     with open(file, 'w') as f:
         f.write(new_file)
 
-    if not is_self:
-        user_module = importlib.import_module(module_name)
-        importlib.reload(user_module)
+    importlib.reload(globals.user_module)
