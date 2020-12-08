@@ -1,1 +1,2 @@
-*.pyc 
+*.pyc
+self_modify/__pycache__
