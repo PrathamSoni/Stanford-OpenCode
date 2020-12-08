@@ -5,7 +5,7 @@ def example_fun():
     self_modify.function_start()
 
     for i in range(10):
-        a = 0
+        a = 1
         print(a)
 
         new_line = 'a = {}'.format(a+1)

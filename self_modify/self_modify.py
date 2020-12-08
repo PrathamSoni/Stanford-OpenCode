@@ -45,10 +45,9 @@ def replace_line(file, line, string, indent):
 def jump(lineno):
     frame = inspect.stack()[2][0]
     called_from = frame
-    print(frame)
 
     def hook(frame, event, arg):
-        if True:#event == 'line' and frame == called_from:
+        if event == 'line' and frame == called_from:
             try:
                 frame.f_lineno = lineno
             except ValueError as e:
@@ -61,7 +60,6 @@ def jump(lineno):
 
     while frame:
         frame.f_trace = hook
-        print(hook)
         frame = frame.f_back
     sys.settrace(hook)
 
@@ -73,10 +71,6 @@ def function_start():
     if(need_to_jump):
         jump(line_called)
 
-# Testing fucntion
+# Just for testing
 def jump_encapulate(line):
     jump(line)
-
-# jump_encapulate(79)
-# print(1)
-# print(2)
