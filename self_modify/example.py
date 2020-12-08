@@ -5,14 +5,16 @@ def example_fun():
     self_modify.function_start()
 
     for i in range(10):
-        a = 7
+        a = 0
         print(a)
 
         new_line = 'a = {}'.format(a+1)
 
         # Need to store and reload global variables before and after replace_line
+        # Need to return False on the line after replace_line
         # TODO: store a
         self_modify.replace_line(__file__, 8, new_line, 2)
+        return False
         # TODO: get cached a
 
     # new_line = 'a = {}'.format(0)

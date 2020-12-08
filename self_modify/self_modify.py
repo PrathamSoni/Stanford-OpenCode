@@ -32,16 +32,18 @@ def replace_line(file, line, string, indent):
     global user_module
     importlib.reload(user_module)
 
+    global need_to_jump
+    need_to_jump = True
+
     caller = inspect.getframeinfo(inspect.stack()[1][0])
     global line_called
-    line_called = caller.lineno
-
-    #TODO: Make the *calling function* return False after this
+    line_called = caller.lineno + 1
+    #TODO: this is a workaround for the parent returning False
 
 # Jump to a spot in the function calling function_start
 # Requires going back multiple frames
 def jump(lineno):
-    frame = sys._getframe().f_back.f_back
+    frame = inspect.stack()[2][0]
     called_from = frame
     print(frame)
 
@@ -59,6 +61,7 @@ def jump(lineno):
 
     while frame:
         frame.f_trace = hook
+        print(hook)
         frame = frame.f_back
     sys.settrace(hook)
 
@@ -74,6 +77,6 @@ def function_start():
 def jump_encapulate(line):
     jump(line)
 
-# jump_encapulate(75)
+# jump_encapulate(79)
 # print(1)
 # print(2)
