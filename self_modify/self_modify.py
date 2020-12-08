@@ -37,7 +37,7 @@ def replace_line(file, line, string, indent):
 
     caller = inspect.getframeinfo(inspect.stack()[1][0])
     global line_called
-    line_called = caller.lineno + 1
+    line_called = caller.lineno + 2
     #TODO: this is a workaround for the parent returning False
 
 # Jump to a spot in the function calling function_start
@@ -69,6 +69,8 @@ def function_start():
     global need_to_jump
     global line_called
     if(need_to_jump):
+        need_to_jump = False
+        print("Jumping!")
         jump(line_called)
 
 # Just for testing

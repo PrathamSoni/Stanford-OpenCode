@@ -11,20 +11,20 @@ def example_fun():
     self_modify.function_start()
 
     for i in range(10):
-        a = 0
+        a = 3
         print(a)
 
         new_line = 'a = {}'.format(a+1)
 
         # Need to store and reload global variables before and after replace_line
         # Need to return False on the line after replace_line
-        # TODO: store a
+        self_modify.user_variables['a'] = a
         self_modify.replace_line(__file__, 8, new_line, 2)
         return False
-        # TODO: get cached a
+        a = self_modify.user_variables['a']
 
-    # new_line = 'a = {}'.format(0)
-    # self_modify.replace_line(__file__, 8, new_line, 2)
+    new_line = 'a = {}'.format(0)
+    self_modify.replace_line(__file__, 8, new_line, 2)
 
     # Need to return True
     return True
@@ -41,7 +41,7 @@ Users are currently required to cache global variables themselves manually.
 
 **TODOs:**
 
-**Jumping to a line in a different file does not work right now.**
+**Jumping to the middle of a block doesn't work.**
 
 It would be nice to have `replace_line` force its parent function to return `False` rather than having the user add that line.
 
