@@ -42,7 +42,7 @@ def jump(lineno):
     print(frame)
 
     def hook(frame, event, arg):
-        if event == 'line' and frame == called_from:
+        if True:#event == 'line' and frame == called_from:
             try:
                 frame.f_lineno = lineno
             except ValueError as e:
@@ -70,6 +70,6 @@ def function_start():
 def jump_encapulate(line):
     jump(line)
 
-jump_encapulate(75)
-print(1)
-print(2)
+# jump_encapulate(75)
+# print(1)
+# print(2)
