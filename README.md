@@ -16,3 +16,4 @@ it's nice if you could provide environment/requirements/config files for easier 
 also, try to localize your code to one folder as much as possible :D
 
 ## Projects (Add Projects Below with Short Description)
+Self-Modify: A library for self-modifying python code.
