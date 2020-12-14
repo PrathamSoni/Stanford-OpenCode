@@ -12,15 +12,30 @@ import os
 import discord
 from dotenv import load_dotenv
 
+#SOCBot help text
+HELP_TEXT ="""Hi, I'm SOCBot, the discord interface for Stanford-OpenCode (SOC)!
+Use `?soc [command]` commands to talk to me.
+Commands:
+`help`, `h` - brings up this text
+`contributors`, `c` - list current SOC contributors
+`readme`, `whatis`, `w` - bring up the current SOC README
+`forks`, `f` - list the number of forks, and the people who have forked
+`latest`, `l` - shows the latest commit to the main SOC repository
+`issues`, `i` - displays the number of open issues
+`view`, `v` - lists the files and folders in the current directory (by default the directory of the main SOC repo)
+`change`, `cd` - changes the current directory being viewed
+'read', 'r' - reads a file into discord
+Remember, I won't respond to commands that don't *start with* `?soc`"""
+
 #The bot secrets are stored in a local .env file for security. No peeking :)
 load_dotenv()
 TOKEN = os.getenv('DISCORD_TOKEN')
 
 client = discord.Client()
 
-#Unimplemented
+#Handles sending a message with a brief guide on bot usage
 async def handle_help(message):
-    i = 0
+    await message.channel.send(HELP_TEXT)
 
 #Unimplemented
 async def handle_contributors(message):
@@ -43,15 +58,15 @@ async def handle_issues(message):
     i = 0
 
 #Unimplemented
-async def handle_dir(message):
+async def handle_view(message):
+    i = 0
+
+#Unimplemented
+async def handle_change_directory(message):
     i = 0
 
 #Unimplemented
 async def handle_read(message):
-    i = 0
-
-#Unimplemented
-async def handle_error(message):
     i = 0
 
 #Dictionary matching keywords with functions
@@ -62,7 +77,8 @@ FCTS_DICT = {'help':handle_help,
 'forks':handle_forks,
 'latest':handle_latest_commit,
 'issues':handle_latest_issue,
-'dir':handle_dir,
+'view':handle_view,
+'change':handle_change_directory,
 'read':handle_read,
 'h':handle_help,
 'c':handle_contributors,
@@ -70,7 +86,8 @@ FCTS_DICT = {'help':handle_help,
 'f':handle_forks,
 'l':handle_latest_commit,
 'i':handle_latest_issue,
-'d':handle_dir,
+'v':handle_view,
+'cd':handle_change_directory,
 'r':handle_read,
 }
 
@@ -89,7 +106,7 @@ async def on_message(message):
         if FCTS_DICT[args[1]]:
             await FCTS_DICT[args[1]](message)
         else:
-            await handle_error(message)
+            await message.channel.send('Unknown command: ' + args[1] + '. Try `?soc help` to see valid commands.')
 
 #Gotta save the best bit for last.
 client.run(TOKEN)
