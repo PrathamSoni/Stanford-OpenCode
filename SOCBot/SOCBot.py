@@ -7,12 +7,18 @@ project. Talk about code-ception.
 """
 #Default packages
 import os
-import urllib.request
+from time import sleep
 
 #Installed packages
 import discord
 from dotenv import load_dotenv
 from bs4 import BeautifulSoup
+from selenium import webdriver
+from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.common.by import By
+from selenium.common.exceptions import TimeoutException
 
 #SOCBot help text
 HELP_TEXT ="""Hi, I'm SOCBot, the discord interface for Stanford-OpenCode (SOC)!
@@ -45,16 +51,20 @@ async def handle_help(message):
 
 #Outputs the number and list of current SOC contributors
 async def handle_contributors(message):
-    contributors = fetch_html(URL).find_all('a', class_="link-gray-dark no-underline flex-self-center")
+    #the first found element is a blank template
+    contributors = fetch_html(URL + '/graphs/contributors').find_all('h3', class_="border-bottom p-2 lh-condensed")[1:]
     reply = "There are currently %d %s contributors:" % (len(contributors), REPO_NAME)
     for contributor in contributors:
-        name = list(contributor.children)[1]
-        reply += '\n' + str(name.get_text())
+        name = list(contributor.children)[5]
+        print(name.get_text())
+        reply += '\n' + name.get_text()
     await message.channel.send(reply)
 
 #Unimplemented
 async def handle_readme(message):
-    i = 0
+    readme = fetch_html(URL).find('article', class_="markdown-body entry-content container-lg")
+    print(readme.get_text())
+    
 
 #Unimplemented
 async def handle_forks(message):
@@ -106,15 +116,24 @@ FCTS_DICT = {'help':handle_help,
 'r':handle_read,
 }
 
+#Initializes the headless selenium chrome webdriver
+def init_webdriver():
+    options = Options()
+    options.add_argument('--headless')
+    options.add_argument('--disable-gpu')
+    global driver
+    driver = webdriver.Chrome(options=options)
+
 #Returns the parsed html of a given website
 def fetch_html(url):
-    with urllib.request.urlopen(url, timeout=5) as page:
-        html = page.read().decode('utf-8')
-        return BeautifulSoup(html, 'html.parser')
+    driver.get(url)
+    sleep(3.1) #load time
+    return BeautifulSoup(driver.page_source, 'html.parser')
 
 #Fires when the bot connects to a serevr it has joined. Exists as a dev-side tool.
 @client.event
 async def on_ready():
+    init_webdriver()
     for guild in client.guilds:
         print(f'{client.user} has connected to {guild.name}!')
 
@@ -129,5 +148,4 @@ async def on_message(message):
         else:
             await message.channel.send('Unknown command: ' + args[1] + '. Try `?soc help` to see valid commands.')
 
-#Gotta save the best bit for last.
-client.run(TOKEN)
+client.run(TOKEN) #Runs bot
