@@ -7,10 +7,12 @@ project. Talk about code-ception.
 """
 #Default packages
 import os
+import urllib.request
 
 #Installed packages
 import discord
 from dotenv import load_dotenv
+from bs4 import BeautifulSoup
 
 #SOCBot help text
 HELP_TEXT ="""Hi, I'm SOCBot, the discord interface for Stanford-OpenCode (SOC)!
@@ -24,8 +26,12 @@ Commands:
 `issues`, `i` - displays the number of open issues
 `view`, `v` - lists the files and folders in the current directory (by default the directory of the main SOC repo)
 `change`, `cd` - changes the current directory being viewed
-'read', 'r' - reads a file into discord
+`read`, `r` - reads a file into discord
 Remember, I won't respond to commands that don't *start with* `?soc`"""
+
+REPO_NAME = "Stanford-OpenCode"
+URL = "https://github.com/PrathamSoni/Stanford-OpenCode"
+url_tail = ""
 
 #The bot secrets are stored in a local .env file for security. No peeking :)
 load_dotenv()
@@ -37,9 +43,14 @@ client = discord.Client()
 async def handle_help(message):
     await message.channel.send(HELP_TEXT)
 
-#Unimplemented
+#Outputs the number and list of current SOC contributors
 async def handle_contributors(message):
-    i = 0
+    contributors = fetch_html(URL).find_all('a', class_="link-gray-dark no-underline flex-self-center")
+    reply = "There are currently %d %s contributors:" % (len(contributors), REPO_NAME)
+    for contributor in contributors:
+        name = list(contributor.children)[1]
+        reply += '\n' + str(name.get_text())
+    await message.channel.send(reply)
 
 #Unimplemented
 async def handle_readme(message):
@@ -69,6 +80,10 @@ async def handle_change_directory(message):
 async def handle_read(message):
     i = 0
 
+#Unimplemented
+async def handle_view(message):
+    i = 0
+
 #Dictionary matching keywords with functions
 FCTS_DICT = {'help':handle_help,
 'contributors':handle_contributors,
@@ -76,7 +91,7 @@ FCTS_DICT = {'help':handle_help,
 'readme':handle_readme,
 'forks':handle_forks,
 'latest':handle_latest_commit,
-'issues':handle_latest_issue,
+'issues':handle_issues,
 'view':handle_view,
 'change':handle_change_directory,
 'read':handle_read,
@@ -85,11 +100,17 @@ FCTS_DICT = {'help':handle_help,
 'w':handle_readme,
 'f':handle_forks,
 'l':handle_latest_commit,
-'i':handle_latest_issue,
+'i':handle_issues,
 'v':handle_view,
 'cd':handle_change_directory,
 'r':handle_read,
 }
+
+#Returns the parsed html of a given website
+def fetch_html(url):
+    with urllib.request.urlopen(url, timeout=5) as page:
+        html = page.read().decode('utf-8')
+        return BeautifulSoup(html, 'html.parser')
 
 #Fires when the bot connects to a serevr it has joined. Exists as a dev-side tool.
 @client.event
