@@ -56,19 +56,30 @@ async def handle_contributors(message):
     reply = "There are currently %d %s contributors:" % (len(contributors), REPO_NAME)
     for contributor in contributors:
         name = list(contributor.children)[5]
-        print(name.get_text())
         reply += '\n' + name.get_text()
     await message.channel.send(reply)
 
-#Unimplemented
+#Replies with the contents of the repository README, formatted simply
 async def handle_readme(message):
     readme = fetch_html(URL).find('article', class_="markdown-body entry-content container-lg")
-    print(readme.get_text())
-    
+    reply = "README: \n"
+    for element in list(readme.children):
+        if (element.name == 'h1'):
+            reply += '**%s**\n' % element.get_text()
+        elif (element.name == 'h2'):
+            reply += '\n**%s**\n' % element.get_text()
+        elif (element.name == 'p'):
+            reply += '%s\n' % element.get_text()
+    await message.channel.send(reply)
 
-#Unimplemented
+#Outputs the number of forks of the repository and the users who have forks of this repository
 async def handle_forks(message):
-    i = 0
+    count = fetch_html(URL+"/network/members").find_all('a', class_="social-count")[2]
+    forkers = fetch_html(URL+"/network/members").find_all('a', class_=False, attrs={'data-hovercard-type':'user'})
+    reply = "%s users have forked this repository:\n" % count.get_text().replace('\n','').strip()
+    for forker in forkers:
+        reply += forker.get_text() + '\n'
+    await message.channel.send(reply)
 
 #Unimplemented
 async def handle_latest_commit(message):
