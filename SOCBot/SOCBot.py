@@ -30,7 +30,7 @@ Commands:
 A blank path or '/' for path will correspond to main directory of the repository. Folders are \
 listed in bolded font. If the path is invalid, my response will say so. Use '/' not '\\' in the path.
 `view [path]`, `v [path]` - reads a file into discord. Reuqires the path to the file within the repo.
-Remember, I won't respond to commands that don't *start with* `?soc`"""
+"""
 
 #These can be chanegd to adapt the code to any github repo
 REPO_NAME = "Stanford-OpenCode"
@@ -104,10 +104,13 @@ async def handle_readme(message):
 async def handle_forks(message):
     html = fetch_html(URL+"/network/members")
     count = html.find_all('a', class_="social-count")[2]
-    forkers = html.find_all('a', class_=False, attrs={'data-hovercard-type':'user'})
-    reply = "%s users have forked this repository:\n Main - " % digitize(count.get_text())
-    for forker in forkers:
-        reply += clean(forker.get_text()) + '\n'
+    forks = html.find_all('div', class_='repo')
+    reply = "%s users have forked this repository:\nMain - " % digitize(count.get_text())
+    for fork in forks:
+        forkers = fork.find_all('a', attrs={'data-hovercard-type':'user'})
+        for forker in forkers:
+            if forker.get_text() != '':
+                reply += clean(forker.get_text()) + '\n'
     await message.channel.send(reply)
 
 #Displays the number of commits on the repository and shares the latest commit
@@ -151,13 +154,15 @@ async def handle_list(message):
         for row in rows:
             header = row.find('div', attrs={'role':'rowheader'})
             icon = row.find('svg', attrs={'role':"img"})
-            rollover(message,reply)
+            if len(reply) > 1700:
+                await message.channel.send(reply)
+                reply = ''
             if icon and 'File' in icon['aria-label']:
                 reply += clean(header.get_text().replace('\n','') + '\n')
             elif icon:
                 reply += '**%s**\n' % clean(header.get_text().replace('\n',''))
     else:
-        reply = 'Invalid Directory'
+        reply = 'Invalid directory'
     await message.channel.send(reply)
 
 #Reads a file from the repository into discord
@@ -169,13 +174,16 @@ async def handle_view(message):
         tail = '/blob/%s/%s' % (BRANCH, args[2].strip('/'))
         doctype = ''
         if tail[tail.rfind('.'):] in SUPPORTED_FORMATS:
-                doctype = SUPPORTED_FORMATS[tail[tail.rfind('.'):]] + '\n'
+            doctype = SUPPORTED_FORMATS[tail[tail.rfind('.'):]] + '\n'
         html = fetch_html(URL+tail)
         lines = html.find_all('td', class_='blob-code blob-code-inner js-file-line')
         if lines:
             reply = clean(tail[tail.rfind('/')+1:]) + ':\n```' + doctype
             for line in lines:
-                rollover(message, reply, '```' + doctype, '```')
+                if len(reply) > 1700:
+                    reply += '```'
+                    await message.channel.send(reply)
+                    reply = '```' + doctype
                 reply += line.get_text().replace('\n','').replace('`','\\`')+'\n'
             reply += '```'
         else:
@@ -235,13 +243,6 @@ def clean(text):
             cleaned += char
     return cleaned
 
-#Discord messages max out at 2000 characters. This is a workaround.
-async def rollover(message, reply, start='', end=''):
-    if len(reply) > 1700:
-        reply += end
-        await message.channel.send(reply)
-        reply = start
-
 #Fires when the bot connects to a serevr it has joined. Exists as a dev-side tool.
 @client.event
 async def on_ready():
@@ -255,7 +256,7 @@ async def on_message(message):
     if ('?soc' == message.content[:4]):
         args = message.content.split(' ')
         args[:] = [arg for arg in args if arg != '']
-        if FCTS_DICT[args[1]]:
+        if args[1] in FCTS_DICT:
             await FCTS_DICT[args[1]](message)
         else:
             await message.channel.send('Unknown command: ' + args[1] + '. Try `?soc help` to see valid commands.')
