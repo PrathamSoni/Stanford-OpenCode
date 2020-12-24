@@ -18,7 +18,7 @@ from selenium.webdriver.chrome.options import Options
 
 #SOCBot help text
 HELP_TEXT ="""Hi, I'm SOCBot, the discord interface for Stanford-OpenCode (SOC)!
-Use `?soc [command]` commands to talk to me.
+Use `?soc [command]` commands to talk to me. All commands are *case sensitive*.
 Commands:
 `help`, `h` - brings up this text
 `contributors`, `c` - list current SOC contributors
@@ -29,13 +29,43 @@ Commands:
 `list [path]`, `ls [path]` - lists the files and folders at the path within the repository. \
 A blank path or '/' for path will correspond to main directory of the repository. Folders are \
 listed in bolded font. If the path is invalid, my response will say so. Use '/' not '\\' in the path.
-`view`, `v` - reads a file into discord
+`view [path]`, `v [path]` - reads a file into discord. Reuqires the path to the file within the repo.
 Remember, I won't respond to commands that don't *start with* `?soc`"""
 
 #These can be chanegd to adapt the code to any github repo
 REPO_NAME = "Stanford-OpenCode"
 URL = "https://github.com/PrathamSoni/Stanford-OpenCode"
 BRANCH = 'main'
+
+#Dict linking extensions to supported formats for discord code blocks
+SUPPORTED_FORMATS = {
+'.sh':'bash',
+'.coffee':'coffeescript',
+'.c':'cpp',
+'.cpp':'cpp',
+'.cxx':'cpp',
+'.cc':'cpp',
+'.C':'cpp',
+'.c++':'cpp',
+'.h':'cpp',
+'.hh':'cpp',
+'.H':'cpp',
+'.hpp':'cpp',
+'.hxx':'cpp',
+'.h++':'cpp',
+'.cs':'cs',
+'.csx':'cs',
+'.css':'css',
+'.ini':'ini',
+'.json':'json',
+'.md':'md',
+'.ml':'ml',
+'.pl':'prolog',
+'.py':'py',
+'.tex':'tex',
+'.xl':'xl',
+'.xml':'xml',
+}
 
 #The bot secrets are stored in a local .env file for security
 load_dotenv()
@@ -109,7 +139,7 @@ async def handle_list(message):
     tail = ''
     valid = True
     reply = ''
-    args = message.content.lower().split(' ')
+    args = message.content.split(' ')
     args[:] = [arg for arg in args if arg != '']
     if (len(args) > 2 and args[2] != '/'):
         tail = '/tree/%s/%s/' % (BRANCH, args[2].strip('/'))
@@ -122,6 +152,9 @@ async def handle_list(message):
             header = row.find('div', attrs={'role':'rowheader'})
             icon = row.find('svg', attrs={'role':"img"})
             if icon:
+                if len(reply) > 1700:
+                    await message.channel.send(reply)
+                    reply = ''
                 if 'File' in icon['aria-label']:
                     reply += clean(header.get_text().replace('\n','') + '\n')
                 else:
@@ -130,12 +163,33 @@ async def handle_list(message):
         reply = 'Invalid Directory'
     await message.channel.send(reply)
 
-#Unimplemented
+#Reads a file from the repository into discord
 async def handle_view(message):
-    args = message.content.lower().split(' ')
+    reply = ''
+    args = message.content.split(' ')
     args[:] = [arg for arg in args if arg != '']
     if (len(args) > 2):
-        tail = '/tree/%s/%s/' % (BRANCH, args[2].strip('/'))
+        tail = '/blob/%s/%s' % (BRANCH, args[2].strip('/'))
+        html = fetch_html(URL+tail)
+        lines = html.find_all('td', class_='blob-code blob-code-inner js-file-line')
+        if lines:
+            reply = clean(tail[tail.rfind('/')+1:]) + ':\n```'
+            if tail[tail.rfind('.'):] in SUPPORTED_FORMATS:
+                reply += SUPPORTED_FORMATS[tail[tail.rfind('.'):]] + '\n'
+            for line in lines:
+                if len(reply) > 1700:
+                    reply += '```'
+                    await message.channel.send(reply)
+                    reply = '```'
+                    if tail[tail.rfind('.'):] in SUPPORTED_FORMATS:
+                        reply += SUPPORTED_FORMATS[tail[tail.rfind('.'):]] +'\n'
+                reply += line.get_text().replace('\n','').replace('`','\\`')+'\n'
+            reply += '```'
+        else:
+            reply = 'Empty/invalid file or path'
+    else:
+        reply = 'Need filename or path argument'
+    await message.channel.send(reply)
 
 #Dictionary matching keywords with functions
 FCTS_DICT = {'help':handle_help,
@@ -182,7 +236,7 @@ def digitize(text):
 def clean(text):
     cleaned = ''
     for char in text:
-        if char in '`_*~>//':
+        if char in '`_*~>\\':
             cleaned += '\\' + char
         else:
             cleaned += char
@@ -198,8 +252,8 @@ async def on_ready():
 #The bot always listens for messages, but it only responds when a message begins with ?soc
 @client.event
 async def on_message(message):
-    if ('?soc' == message.content[:4].lower()):
-        args = message.content.lower().split(' ')
+    if ('?soc' == message.content[:4]):
+        args = message.content.split(' ')
         args[:] = [arg for arg in args if arg != '']
         if FCTS_DICT[args[1]]:
             await FCTS_DICT[args[1]](message)
