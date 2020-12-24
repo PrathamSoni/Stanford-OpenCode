@@ -31,11 +31,11 @@ Commands:
 `view`, `v` - reads a file into discord
 Remember, I won't respond to commands that don't *start with* `?soc`"""
 
+#These can be chanegd to adapt the code to any github repo
 REPO_NAME = "Stanford-OpenCode"
 URL = "https://github.com/PrathamSoni/Stanford-OpenCode"
-url_tail = ""
 
-#The bot secrets are stored in a local .env file for security. No peeking :)
+#The bot secrets are stored in a local .env file for security
 load_dotenv()
 TOKEN = os.getenv('DISCORD_TOKEN')
 
@@ -78,9 +78,18 @@ async def handle_forks(message):
         reply += forker.get_text() + '\n'
     await message.channel.send(reply)
 
-#Unimplemented
+#Displays the number of commits on the repository and shares the latest commit
 async def handle_latest_commit(message):
-    i = 0
+    html = fetch_html(URL)
+    count = list(html.find('a', class_="pl-3 pr-3 py-3 p-md-0 mt-n3 mb-n3 mr-n3 m-md-0 link-gray-dark no-underline no-wrap").children)[3]
+    commit = list(html.find('div', class_="css-truncate css-truncate-overflow text-gray").children)[3]
+    reply = "There have been %s commits to %s so far.\n The latest commit is:\n" % (digitize(count.get_text()), REPO_NAME)
+    reply += commit.get_text().replace('\n','') + '\n'
+    author = html.find('a', class_="commit-author user-mention")
+    date = html.find('relative-time', class_="no-wrap")
+    reply += "by %s, %s." % (author.get_text(), date.get_text())
+    await message.channel.send(reply)
+    
 
 #Replies with the number of open and closed issues, and gives the time openned of the latest open issue
 async def handle_issues(message):
