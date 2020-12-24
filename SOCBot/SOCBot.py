@@ -151,14 +151,11 @@ async def handle_list(message):
         for row in rows:
             header = row.find('div', attrs={'role':'rowheader'})
             icon = row.find('svg', attrs={'role':"img"})
-            if icon:
-                if len(reply) > 1700:
-                    await message.channel.send(reply)
-                    reply = ''
-                if 'File' in icon['aria-label']:
-                    reply += clean(header.get_text().replace('\n','') + '\n')
-                else:
-                    reply += '**%s**\n' % clean(header.get_text().replace('\n',''))
+            rollover(message,reply)
+            if icon and 'File' in icon['aria-label']:
+                reply += clean(header.get_text().replace('\n','') + '\n')
+            elif icon:
+                reply += '**%s**\n' % clean(header.get_text().replace('\n',''))
     else:
         reply = 'Invalid Directory'
     await message.channel.send(reply)
@@ -170,19 +167,15 @@ async def handle_view(message):
     args[:] = [arg for arg in args if arg != '']
     if (len(args) > 2):
         tail = '/blob/%s/%s' % (BRANCH, args[2].strip('/'))
+        doctype = ''
+        if tail[tail.rfind('.'):] in SUPPORTED_FORMATS:
+                doctype = SUPPORTED_FORMATS[tail[tail.rfind('.'):]] + '\n'
         html = fetch_html(URL+tail)
         lines = html.find_all('td', class_='blob-code blob-code-inner js-file-line')
         if lines:
-            reply = clean(tail[tail.rfind('/')+1:]) + ':\n```'
-            if tail[tail.rfind('.'):] in SUPPORTED_FORMATS:
-                reply += SUPPORTED_FORMATS[tail[tail.rfind('.'):]] + '\n'
+            reply = clean(tail[tail.rfind('/')+1:]) + ':\n```' + doctype
             for line in lines:
-                if len(reply) > 1700:
-                    reply += '```'
-                    await message.channel.send(reply)
-                    reply = '```'
-                    if tail[tail.rfind('.'):] in SUPPORTED_FORMATS:
-                        reply += SUPPORTED_FORMATS[tail[tail.rfind('.'):]] +'\n'
+                rollover(message, reply, '```' + doctype, '```')
                 reply += line.get_text().replace('\n','').replace('`','\\`')+'\n'
             reply += '```'
         else:
@@ -241,6 +234,13 @@ def clean(text):
         else:
             cleaned += char
     return cleaned
+
+#Discord messages max out at 2000 characters. This is a workaround.
+async def rollover(message, reply, start='', end=''):
+    if len(reply) > 1700:
+        reply += end
+        await message.channel.send(reply)
+        reply = start
 
 #Fires when the bot connects to a serevr it has joined. Exists as a dev-side tool.
 @client.event
