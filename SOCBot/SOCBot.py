@@ -26,14 +26,16 @@ Commands:
 `forks`, `f` - list the number of forks, and the people who have forked
 `latest`, `l` - shows the latest commit to the main SOC repository
 `issues`, `i` - displays the number of open issues
-`list`, `ls` - lists the files and folders in the current directory (by default the directory of the main SOC repo)
-`change`, `cd` - changes the current directory being viewed
+`list [path]`, `ls [path]` - lists the files and folders at the path within the repository. \
+A blank path or '/' for path will correspond to main directory of the repository. Folders are \
+listed in bolded font. If the path is invalid, my response will say so. Use '/' not '\\' in the path.
 `view`, `v` - reads a file into discord
 Remember, I won't respond to commands that don't *start with* `?soc`"""
 
 #These can be chanegd to adapt the code to any github repo
 REPO_NAME = "Stanford-OpenCode"
 URL = "https://github.com/PrathamSoni/Stanford-OpenCode"
+BRANCH = 'main'
 
 #The bot secrets are stored in a local .env file for security
 load_dotenv()
@@ -52,7 +54,7 @@ async def handle_contributors(message):
     reply = "There are currently %d %s contributors:" % (len(contributors), REPO_NAME)
     for contributor in contributors:
         name = list(contributor.children)[5]
-        reply += '\n' + name.get_text()
+        reply += '\n' + clean(name.get_text())
     await message.channel.send(reply)
 
 #Replies with the contents of the repository README, formatted simply
@@ -61,11 +63,11 @@ async def handle_readme(message):
     reply = "README: \n"
     for element in list(readme.children):
         if (element.name == 'h1'):
-            reply += '**%s**\n' % element.get_text()
+            reply += '**%s**\n' % clean(element.get_text())
         elif (element.name == 'h2'):
-            reply += '\n**%s**\n' % element.get_text()
+            reply += '\n**%s**\n' % clean(element.get_text())
         elif (element.name == 'p'):
-            reply += '%s\n' % element.get_text()
+            reply += '%s\n' % clean(element.get_text())
     await message.channel.send(reply)
 
 #Outputs the number of forks of the repository and the users who have forks of this repository
@@ -75,7 +77,7 @@ async def handle_forks(message):
     forkers = html.find_all('a', class_=False, attrs={'data-hovercard-type':'user'})
     reply = "%s users have forked this repository:\n Main - " % digitize(count.get_text())
     for forker in forkers:
-        reply += forker.get_text() + '\n'
+        reply += clean(forker.get_text()) + '\n'
     await message.channel.send(reply)
 
 #Displays the number of commits on the repository and shares the latest commit
@@ -88,7 +90,7 @@ async def handle_latest_commit(message):
     author = html.find('a', class_="commit-author user-mention")
     date = html.find('relative-time', class_="no-wrap")
     reply += "by %s, %s." % (author.get_text(), date.get_text())
-    await message.channel.send(reply)
+    await message.channel.send(clean(reply))
     
 
 #Replies with the number of open and closed issues, and gives the time openned of the latest open issue
@@ -99,20 +101,41 @@ async def handle_issues(message):
     reply = "There are %s open issues and %s closed issues. \n" % (digitize(open_label.get_text()), digitize(closed_label.get_text()))
     if int(digitize(open_label.get_text())) > 0:
         latest = html.find('relative-time', class_="no-wrap")
-        reply += "The latest issue was opened %s." % latest.get_text()
+        reply += "The latest issue was opened %s." % clean(latest.get_text())
+    await message.channel.send(reply)
+
+#Lists files and folders in a given valid subdirectory of the repository
+async def handle_list(message):
+    tail = ''
+    valid = True
+    reply = ''
+    args = message.content.lower().split(' ')
+    args[:] = [arg for arg in args if arg != '']
+    if (len(args) > 2 and args[2] != '/'):
+        tail = '/tree/%s/%s/' % (BRANCH, args[2].strip('/'))
+    html = fetch_html(URL+tail)
+    rows = html.find_all('div', attrs={'role':'row'})
+    rows[:] = [row for row in rows if 'Box-row' in row['class']]
+    if rows:
+        reply = clean('Directory: /%s/%s\n' % (REPO_NAME, tail.replace('/tree/'+BRANCH+'/', '')))
+        for row in rows:
+            header = row.find('div', attrs={'role':'rowheader'})
+            icon = row.find('svg', attrs={'role':"img"})
+            if icon:
+                if 'File' in icon['aria-label']:
+                    reply += clean(header.get_text().replace('\n','') + '\n')
+                else:
+                    reply += '**%s**\n' % clean(header.get_text().replace('\n',''))
+    else:
+        reply = 'Invalid Directory'
     await message.channel.send(reply)
 
 #Unimplemented
-async def handle_list(message):
-    i = 0
-
-#Unimplemented
-async def handle_change_directory(message):
-    i = 0
-
-#Unimplemented
 async def handle_view(message):
-    i = 0
+    args = message.content.lower().split(' ')
+    args[:] = [arg for arg in args if arg != '']
+    if (len(args) > 2):
+        tail = '/tree/%s/%s/' % (BRANCH, args[2].strip('/'))
 
 #Dictionary matching keywords with functions
 FCTS_DICT = {'help':handle_help,
@@ -122,7 +145,6 @@ FCTS_DICT = {'help':handle_help,
 'latest':handle_latest_commit,
 'issues':handle_issues,
 'list':handle_list,
-'change':handle_change_directory,
 'view':handle_view,
 'h':handle_help,
 'c':handle_contributors,
@@ -131,7 +153,6 @@ FCTS_DICT = {'help':handle_help,
 'l':handle_latest_commit,
 'i':handle_issues,
 'ls':handle_list,
-'cd':handle_change_directory,
 'v':handle_view,
 }
 
@@ -156,6 +177,16 @@ def digitize(text):
         if char in '1234567890':
             digitized += char
     return digitized
+
+#Puts an escape char before discord markdown symbols, this is to avoid unwanted discord formatting
+def clean(text):
+    cleaned = ''
+    for char in text:
+        if char in '`_*~>//':
+            cleaned += '\\' + char
+        else:
+            cleaned += char
+    return cleaned
 
 #Fires when the bot connects to a serevr it has joined. Exists as a dev-side tool.
 @client.event
