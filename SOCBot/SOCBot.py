@@ -1,4 +1,4 @@
-#MLSBot.py
+#SOCBot.py
 """
 @author: Nikhil Devanathan
 This script handles the functionality of SOCBot, a discord bot that monitors and reports the state 
@@ -15,10 +15,6 @@ from dotenv import load_dotenv
 from bs4 import BeautifulSoup
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
-from selenium.webdriver.common.by import By
-from selenium.common.exceptions import TimeoutException
 
 #SOCBot help text
 HELP_TEXT ="""Hi, I'm SOCBot, the discord interface for Stanford-OpenCode (SOC)!
@@ -26,13 +22,13 @@ Use `?soc [command]` commands to talk to me.
 Commands:
 `help`, `h` - brings up this text
 `contributors`, `c` - list current SOC contributors
-`readme`, `whatis`, `w` - bring up the current SOC README
+`readme`, `r` - bring up the current SOC README
 `forks`, `f` - list the number of forks, and the people who have forked
 `latest`, `l` - shows the latest commit to the main SOC repository
 `issues`, `i` - displays the number of open issues
-`view`, `v` - lists the files and folders in the current directory (by default the directory of the main SOC repo)
+`list`, `ls` - lists the files and folders in the current directory (by default the directory of the main SOC repo)
 `change`, `cd` - changes the current directory being viewed
-`read`, `r` - reads a file into discord
+`view`, `v` - reads a file into discord
 Remember, I won't respond to commands that don't *start with* `?soc`"""
 
 REPO_NAME = "Stanford-OpenCode"
@@ -74,9 +70,10 @@ async def handle_readme(message):
 
 #Outputs the number of forks of the repository and the users who have forks of this repository
 async def handle_forks(message):
-    count = fetch_html(URL+"/network/members").find_all('a', class_="social-count")[2]
-    forkers = fetch_html(URL+"/network/members").find_all('a', class_=False, attrs={'data-hovercard-type':'user'})
-    reply = "%s users have forked this repository:\n" % count.get_text().replace('\n','').strip()
+    html = fetch_html(URL+"/network/members")
+    count = html.find_all('a', class_="social-count")[2]
+    forkers = html.find_all('a', class_=False, attrs={'data-hovercard-type':'user'})
+    reply = "%s users have forked this repository:\n Main - " % digitize(count.get_text())
     for forker in forkers:
         reply += forker.get_text() + '\n'
     await message.channel.send(reply)
@@ -85,20 +82,23 @@ async def handle_forks(message):
 async def handle_latest_commit(message):
     i = 0
 
-#Unimplemented
+#Replies with the number of open and closed issues, and gives the time openned of the latest open issue
 async def handle_issues(message):
-    i = 0
+    html = fetch_html(URL+"/issues")
+    open_label = html.find('a', class_="btn-link selected", attrs={'data-ga-click':'Issues, Table state, Open'})
+    closed_label = html.find('a', class_="btn-link", attrs={'data-ga-click':'Issues, Table state, Closed'})
+    reply = "There are %s open issues and %s closed issues. \n" % (digitize(open_label.get_text()), digitize(closed_label.get_text()))
+    if int(digitize(open_label.get_text())) > 0:
+        latest = html.find('relative-time', class_="no-wrap")
+        reply += "The latest issue was opened %s." % latest.get_text()
+    await message.channel.send(reply)
 
 #Unimplemented
-async def handle_view(message):
+async def handle_list(message):
     i = 0
 
 #Unimplemented
 async def handle_change_directory(message):
-    i = 0
-
-#Unimplemented
-async def handle_read(message):
     i = 0
 
 #Unimplemented
@@ -108,23 +108,22 @@ async def handle_view(message):
 #Dictionary matching keywords with functions
 FCTS_DICT = {'help':handle_help,
 'contributors':handle_contributors,
-'whatis':handle_readme,
 'readme':handle_readme,
 'forks':handle_forks,
 'latest':handle_latest_commit,
 'issues':handle_issues,
-'view':handle_view,
+'list':handle_list,
 'change':handle_change_directory,
-'read':handle_read,
+'view':handle_view,
 'h':handle_help,
 'c':handle_contributors,
-'w':handle_readme,
+'r':handle_readme,
 'f':handle_forks,
 'l':handle_latest_commit,
 'i':handle_issues,
-'v':handle_view,
+'ls':handle_list,
 'cd':handle_change_directory,
-'r':handle_read,
+'v':handle_view,
 }
 
 #Initializes the headless selenium chrome webdriver
@@ -140,6 +139,14 @@ def fetch_html(url):
     driver.get(url)
     sleep(3.1) #load time
     return BeautifulSoup(driver.page_source, 'html.parser')
+
+#Returns a string of the numeric charcters in a given string
+def digitize(text):
+    digitized = ''
+    for char in text:
+        if char in '1234567890':
+            digitized += char
+    return digitized
 
 #Fires when the bot connects to a serevr it has joined. Exists as a dev-side tool.
 @client.event
