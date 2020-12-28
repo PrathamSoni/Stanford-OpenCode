@@ -1,2 +1,4 @@
 *.pyc
+.env
+SOCBot/*.log
 self_modify/__pycache__
