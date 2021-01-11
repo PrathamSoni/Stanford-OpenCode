@@ -19,3 +19,5 @@ also, try to localize your code to one folder as much as possible :D
 Self-Modify: A library for self-modifying python code.
 
 SOCBot: A discord bot for monitoring the SOC GitHub repository
+
+JustinBot: :)
