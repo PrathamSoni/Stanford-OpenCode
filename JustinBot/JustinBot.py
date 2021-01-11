@@ -50,7 +50,7 @@ def magic(word):
     if word.find('!') == i:
         bef = word[:i]
         ret = f'{word} = '
-        if is_int(bef):
+        if is_int(bef) and int(bef) <= 805:
             val = multifactorial(int(bef), len(word) - i)
             ret += str(val)
         else:
